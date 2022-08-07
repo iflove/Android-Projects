@@ -1,0 +1,541 @@
+/**
+ * 作用描述:
+ * 组件描述:
+ * 排查描述: 过滤: Configure , applicationId
+ * 创建人 rentl
+ * 创建日期 2022/1/30
+ * 修改日期 2022/1/30
+ * 版权 pub
+ */
+
+//打印日志
+println "应用全局默认配置: " + rootProject.file('./buildConfig/baseAndroid.gradle').getAbsolutePath()
+
+//输出gradle版本
+println("gradleVersion: " + gradle.gradleVersion)
+println("getGradleUserHomeDir: " + gradle.getGradleUserHomeDir())
+println("gradleHomeDir: " + gradle.gradleHomeDir)
+
+//verbose projects
+println getSubprojects().toString().replaceAll("project ", "")
+
+//加载Properties配置文件
+def dict = new Properties()
+dict.load(new FileInputStream(rootProject.file("./buildConfig/base.properties")))
+//AndroidX releases 版本
+dict.load(new FileInputStream(rootProject.file("./buildConfig/anroidx-releases.properties")))
+//项目中all maven依赖mapping版本信息配置
+dict.load(new FileInputStream(rootProject.file("./buildConfig/dependencies-mapping.properties")))
+def str = dict['DefString']
+def intType = dict['DefInt']
+def boolType = dict['DefBool']
+def trueStr = dict['trueStr']
+def falseStr = dict['falseStr']
+
+//Android 编译版本信息
+def compileSdkVersionVar = dict['compileSdkVersion'] as int
+def minSdkVersionVar = dict['minSdkVersion'] as int
+ext {
+    /** 解决依赖版本不一致 **/
+    all_forceDep_map = []   //所有强制依赖项 不重复map
+    forceDep = { String key ->
+        if (all_forceDep_map.contains(key)) {
+            return key
+        }
+        println "forceDep: $key"
+        all_forceDep_map.add(key)
+        return key
+    }
+    //强制添加依赖该版本 默认: implementation
+    addForceDep = { DependencyHandler dh, String score = "implementation", String key ->
+        println "${score} ${key}"
+        dh.add(score, forceDep(key))
+    }
+    /** 解决依赖版本不一致 **/
+
+    //Properties工具方法
+    getBool = { Properties properties, String key ->
+        return Boolean.parseBoolean(properties[key])
+    }
+
+    modules_dependencies = ['': '']
+    //项目中all maven依赖mapping版本信息配置
+    def mapping = new Properties()
+    mapping.load(new FileInputStream(rootProject.file("./buildConfig/dependencies-mapping.properties")))
+    Enumeration<String> e = mapping.keys()
+    while (e.hasMoreElements()) {
+        String artifactId = e.nextElement()
+        def value = mapping.get(artifactId)
+        modules_dependencies.put(artifactId, value)
+        //println("mapping_artifactId: " + artifactId + ":" + value)
+    }
+
+    //映射依赖 默认: implementation
+    addAliasDep = { Project p, String score = "implementation", String artifactId ->
+        println "addAliasDep: ${score} ${artifactId}"
+        DependencyHandler dh = p.dependencies
+        def publish_channel = false
+        p.gradle.startParameter.getTaskNames().each { task ->
+            //println("task: " + task)
+            if (task.contains("publish")) {
+                publish_channel = true
+                if (publish_channel) {
+                    score = "compileOnly"
+                }
+            }
+        }
+        def bindInfo = modules_dependencies.getOrDefault(artifactId, null)
+        //println "bindInfo " + bindInfo
+        if (bindInfo instanceof String) {
+            dh.add(score, bindInfo, { changing = bindInfo.contains('com.androidz') })
+            println "addAliasDep>> " + score + " '${bindInfo}'"
+        } else if (bindInfo instanceof Map) {
+            def map = bindInfo as Map
+            def projectInfo = map.getOrDefault("project", "")
+            def moduleInfo = map.getOrDefault("module", "")
+            def aarInfo = map.getOrDefault("aar", "")
+            def my_dep_option = map.getOrDefault("my_dep_option", "")
+            //println "> applyDependency: ${p.name} map: " + map
+
+            if (projectInfo.isBlank() && moduleInfo.isBlank() && aarInfo.isBlank()) {
+                System.err.println("warning: projectInfo.isBlank() && moduleInfo.isBlank() && aarInfo.isBlank()")
+                return
+            }
+            boolean applyProject = ("project" == my_dep_option) && !projectInfo.isBlank()
+            boolean applyModule = ("module" == my_dep_option) && !moduleInfo.isBlank()
+            boolean applyAAR = ("aar" == my_dep_option) && !aarInfo.isBlank()
+
+            if (!(applyProject || applyModule || applyAAR)) {
+                applyProject = ("project" == all_dep_option) && !projectInfo.isBlank()
+                applyModule = ("module" == all_dep_option) && !moduleInfo.isBlank()
+                applyAAR = ("aar" == all_dep_option) && !aarInfo.isBlank()
+            }
+            if (applyProject) {
+                Project depProject = p.findProject(projectInfo)
+                if (depProject == null) {
+                    throw new Exception("请检查 ${projectInfo}")
+                }
+                dh.add(score, depProject)
+                //println "> applyDependency: ${p.name} , score:$score, addProject: " + projectInfo
+
+                println "addAliasDep>> " + "$score project('$projectInfo')"
+            } else if (applyModule) {
+                dh.add(score, moduleInfo, { changing = moduleInfo.contains('com.androidz') })
+                //println "> applyDependency: ${p.name} , score:$score, addModule: " + moduleInfo
+                println "addAliasDep>> " + "$score '$moduleInfo'"
+            } else if (applyAAR) {
+                ConfigurableFileCollection depProject = p.files(aarInfo)
+                if (depProject == null) {
+                    throw new Exception("请检查 ${aarInfo}")
+                }
+                dh.add(score, depProject)
+                //println "> applyDependency: ${p.name} , score:$score, addAar: " + moduleInfo
+                println "addAliasDep>> " + "$score files('$aarInfo')"
+            }
+        }
+    }
+}
+def targetSdkVersionVar = dict['targetSdkVersion'] as int
+
+//当前工程的所有子项目, 执行以下闭包
+subprojects { Project p ->
+    if (!p.buildFile.exists()) {
+        return
+    }
+    println("开始默认配置: " + p.name + " depth " + p.depth)
+    //lib 下depConfig配置文件
+    def depConfig = new File(projectDir, 'depConfig.properties')
+    if (depConfig.exists()) {
+        println 'load submodule depConfig configs: ' + depConfig.getAbsolutePath()
+        dict.load(new FileInputStream(depConfig))
+        String groupId = dict['groupId']
+        if (groupId == null || groupId.isEmpty()) {
+            throw new Exception("maven分组ID不允许为空")
+        }
+        String projectName = project.getName()
+        String artifactId = dict['artifactId']
+        if (artifactId == null || artifactId.isEmpty()) {
+            artifactId = projectName
+        }
+        String projectPath = dict['project']
+        if (projectPath == null || projectPath.isEmpty()) {
+            projectPath = p.path
+        }
+
+        //全局模块依赖map
+        Map<String, String> depMap = new HashMap<>()
+        depMap.put("groupId", groupId)
+        depMap.put("artifactId", artifactId)
+        depMap.put("project", projectPath)
+        depMap.put("module", dict['module'])
+        depMap.put("aar", dict['aar'])
+        depMap.put("my_dep_option", dict['my_dep_option'])
+        modules_dependencies.put(artifactId, depMap)
+
+        //lib 默认包名ID格式: 分组ID+工件ID
+        String applicationIdName = "${groupId}.${artifactId}"
+        //提供属性其它处用
+        p.ext.set("groupId", groupId)
+        p.ext.set("artifactId", artifactId)
+        p.ext.set("applicationIdName", applicationIdName)
+    }
+
+    //评估前阶段
+    beforeEvaluate { Project p1 ->
+        println("评估前阶段: " + p1.name + " depth " + p1.depth)
+
+        //lib 下debugConfig配置文件
+        def moduleDebugConfig = new File(projectDir, 'debugConfig.properties')
+        def libModulesIsLib = false
+        if (moduleDebugConfig.exists()) {
+            println 'load submodule debug configs: ' + moduleDebugConfig.getAbsolutePath()
+            dict.load(new FileInputStream(moduleDebugConfig))
+            libModulesIsLib = getBool(dict, 'libModulesIsLib')
+            p1.ext.set("libModulesIsLib", libModulesIsLib)
+
+        }
+
+        def hasAppPlugin = false
+        //组件化切换调试常见方案
+        if (libModulesIsLib) {
+            p1.plugins.apply("com.android.library")
+            println 'apply lib'
+        } else {
+            p1.plugins.apply("com.android.application")
+            println 'apply application'
+            hasAppPlugin = true
+
+            //didi drouter apply 默认可打开或关闭
+            //p.plugins.apply("com.didi.drouter")
+        }
+        p1.ext.set("hasAppPlugin", hasAppPlugin)
+
+        //插件统一管理
+        p1.plugins.apply("kotlin-android") //'org.jetbrains.kotlin.android'
+        p1.plugins.apply("kotlin-kapt")  //Kotlin 使用 kapt 编译器插件来支持注解处理器
+
+
+    }
+    //评估后阶段
+    afterEvaluate { Project p1 ->
+        println("评估后阶段: " + p1.name + " depth " + p1.depth)
+        println "modules_dependencies: " + modules_dependencies
+
+        //如果不是Android项目请处理
+        p.plugins.apply("kotlin-parcelize") //add：2022-08-03  Please see url: https://developer.android.com/kotlin/parcelize
+
+        def hasAppPlugin = p1.ext.find("hasAppPlugin")
+        def libModulesIsLib = p1.ext.find("libModulesIsLib")
+
+        //AndroidX 统一依赖组件开关,子模块按需使用吧
+        def autoDependencies = ext.find("androidx_auto_dependencies") == null ? true : ext.find("androidx_auto_dependencies")
+        //自动依懒关闭 （默认开启）
+        def androidx_room_auto_dependencies = ext.find("androidx_room_auto_dependencies") == null ? false : ext.find("androidx_room_auto_dependencies")
+        //room自动依懒关闭 （默认禁用）【为了减少kapt插件处理
+
+        //kapt插件配置
+        kapt {
+            javacOptions {
+                // 增加注解处理器的最大错误次数 // 默认为 100。
+                option("-Xmaxerrs", 512)
+            }
+            if (androidx_room_auto_dependencies) {
+                arguments {
+                    arg("room.schemaLocation", "$projectDir/schemas")
+                }
+            }
+        }
+        android {
+            compileSdk compileSdkVersionVar
+
+            defaultConfig {
+                if (hasAppPlugin) { //组件化app/lib切换
+                    def applicationIdName = p1.ext.find("applicationIdName")
+                    if (applicationIdName != null) {
+                        applicationId "${applicationIdName}"
+                        println "> ${project.name}> Configure applicationId: ${applicationIdName}"
+                    }
+                }
+
+
+                minSdk minSdkVersionVar
+                targetSdk targetSdkVersionVar
+
+                testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+                //lib-proguard
+                consumerProguardFiles "consumer-rules.pro"
+
+                //资源配置
+                resConfigs "en", "zh"
+
+                //ndk配置
+                ndk {
+                    //设置支持的so库框架
+                    abiFilters "arm64-v8a", 'armeabi-v7a'
+                }
+
+            }
+
+            //编译配置 （jdk）
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+            //kotlin配置（jvm）
+            kotlinOptions {
+                freeCompilerArgs = ['-Xjvm-default=all-compatibility']
+                jvmTarget = '1.8'
+            }
+
+            //apk签名配置
+            signingConfigs {
+                keystore {
+                    keyAlias 'xiao'
+                    keyPassword 'xiao123'
+                    storeFile rootProject.file('./keystore/xiao.jks') //100 year
+                    storePassword 'xiao123'
+                    enableV1Signing true
+                    enableV2Signing true
+                    //通过 APK v4 签名，您可以使用 Android 11 中的 ADB 增量 APK 安装快速部署大型 APK。此新标志负责部署过程中的 APK 签名步骤。
+                    enableV3Signing true
+                    enableV4Signing true
+                }
+            }
+
+            //配置 build 变体  see: https://developer.android.com/studio/build/build-variants
+            buildTypes {
+                debug {
+                    zipAlignEnabled true
+                    minifyEnabled false
+                    signingConfig signingConfigs.keystore
+
+                    //独立调试
+                    if (Boolean.FALSE == libModulesIsLib) {
+                        //是否添加app包名后缀
+                        applicationIdSuffix ".debug"
+                        sourceSets {
+                            main { //建立demo资源夹
+                                manifest.srcFile 'src/demo/AndroidManifest.xml'
+                                java.srcDirs = ['src/main/java', 'src/demo/java']
+                                res.srcDirs = ['src/main/res', 'src/demo/res']
+                            }
+                        }
+                    }
+                }
+                release {
+                    //shrinkResources true
+                    minifyEnabled true
+                    //开启zip对齐，加快资源的读取速度
+                    zipAlignEnabled true
+                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                    signingConfig signingConfigs.keystore
+                }
+            }
+
+            def publish_channel = false
+            //println "Start parametes: dependencies tasks = " + gradle.startParameter.getTaskNames()
+            gradle.startParameter.getTaskNames().each { task ->
+                //println("task: " + task)
+                if (task.contains("publish")) {
+                    publish_channel = true
+                }
+            }
+            //AndroidX 统一依赖,子模块按需使用吧
+            dependencies {
+                def score = publish_channel ? "compileOnly" : "implementation"
+
+                //非常常用的基础api maven等方式依赖
+                println("> Configure 非常常用的基础api ")
+                //addForceDep(it, score, 'com.github.iflove.Hunter:logExtlibrary:2.0.0')
+                addForceDep(it, score, 'org.apache.commons:commons-lang3:3.12.0')
+
+                //println("> Configure 非常常用的基础lib project stub_modules ")
+                //if ("stub_modules" != p1.parent.name) {
+                //}
+
+                if (!autoDependencies) {
+                    println("build.gradle:androidx_auto_dependencies:close " + p.getName())
+                    return
+                }
+
+                /** AndroidX 组件库列表**/
+                println("> Configure AndroidX 组件库列表")
+
+                //官方lib multidex
+                addForceDep(it, score, 'androidx.multidex:multidex:2.0.1')
+                //最常用annotations
+                addForceDep(it, score, 'androidx.annotation:annotation:1.3.0')
+                //Fragment、Activity常用相关
+                addForceDep(it, score, 'androidx.appcompat:appcompat:1.4.1')
+                addForceDep(it, score, 'androidx.appcompat:appcompat-resources:1.4.1')
+                addForceDep(it, score, 'androidx.vectordrawable:vectordrawable:1.1.0')
+                //+--- androidx.appcompat:appcompat-resources:1.4.1
+                addForceDep(it, score, 'androidx.vectordrawable:vectordrawable-animated:1.1.0')
+                //+--- androidx.appcompat:appcompat-resources:1.4.1
+
+                addForceDep(it, score, 'androidx.cursoradapter:cursoradapter:1.0.0')
+                // \--- appcompat
+                addForceDep(it, score, 'androidx.fragment:fragment:1.4.1')
+                addForceDep(it, score, 'androidx.loader:loader:1.1.0') // \--- fragment
+
+                //常用核心依赖相关
+                addForceDep(it, score, 'androidx.core:core:1.7.0')
+                addForceDep(it, score, 'androidx.versionedparcelable:versionedparcelable:1.1.1')
+                //+--- androidx.core:core:1.7.0
+                addForceDep(it, score, 'androidx.arch.core:core-common:2.1.0')
+                addForceDep(it, score, 'androidx.arch.core:core-runtime:2.1.0')
+                //android collection
+                addForceDep(it, score, 'androidx.collection:collection:1.1.0')
+
+                //常用View相关
+                //addForceDep(it, score, 'androidx.databinding:viewbinding:7.2.1')
+                addForceDep(it, score, 'androidx.gridlayout:gridlayout:1.0.0')
+                addForceDep(it, score, 'androidx.cardview:cardview:1.0.0')
+                addForceDep(it, score, 'androidx.recyclerview:recyclerview:1.2.1')
+                addForceDep(it, score, 'androidx.viewpager:viewpager:1.0.0')
+                addForceDep(it, score, 'androidx.viewpager2:viewpager2:1.0.0') // \--- material
+                addForceDep(it, score, 'androidx.customview:customview:1.1.0') // \--- viewpager
+                addForceDep(it, score, 'androidx.constraintlayout:constraintlayout:2.1.1')
+                addForceDep(it, score, 'androidx.constraintlayout:constraintlayout-solver:2.0.4')
+
+                //design=>material *官方Material Design (*TabLayout))
+                addForceDep(it, score, 'com.google.android.material:material:1.5.0')
+                addForceDep(it, score, 'androidx.coordinatorlayout:coordinatorlayout:1.1.0')
+                // \--- material
+                addForceDep(it, score, 'androidx.transition:transition:1.4.1') // \--- material
+                addForceDep(it, score, 'androidx.customview:customview:1.1.0')
+                // \--- material、recyclerview等
+
+                //常见的android.support.v4.v13, 对应androidx.legacy，androidx.core
+                addForceDep(it, score, 'androidx.legacy:legacy-support-v4:1.0.0')
+                addForceDep(it, score, 'androidx.legacy:legacy-support-v13:1.0.0')
+                addForceDep(it, score, 'androidx.legacy:legacy-support-core-ui:1.0.0')
+                addForceDep(it, score, 'androidx.legacy:legacy-support-core-utils:1.0.0')
+                addForceDep(it, score, 'androidx.asynclayoutinflater:asynclayoutinflater:1.0.0')
+                addForceDep(it, score, 'androidx.drawerlayout:drawerlayout:1.1.1')
+                // \--- androidx.legacy:legacy-support-core-ui:1.0.0
+                addForceDep(it, score, 'androidx.interpolator:interpolator:1.0.0')
+                // \--- androidx.legacy:legacy-support-core-ui:1.0.0
+                addForceDep(it, score, 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0')
+                // \--- androidx.legacy:legacy-support-core-ui:1.0.0
+                addForceDep(it, score, 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0')
+                // \--- androidx.legacy:legacy-support-core-ui:1.0.0
+                def lifecycle_version = dict['gl_lifecycle_version']
+
+                // ViewModel
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version")
+                //ViewModel KTX
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
+                // LiveData
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-livedata:$lifecycle_version")
+                //LiveData KTX
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version")
+                // Lifecycles only (without ViewModel or LiveData)
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-runtime:$lifecycle_version")
+                //Lifecycle KTX
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version")
+                // Saved state module for ViewModel
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycle_version")
+                //2022-05-26: vstart 移除保存的状态
+                // Annotation processor
+                //kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+                // alternately - if using Java8, use the following instead of lifecycle-compiler
+                addForceDep(it, score, "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version")
+                // optional - helpers for implementing LifecycleOwner in a Service
+                //implementation "androidx.lifecycle:lifecycle-service:$lifecycle_version"
+                // optional - ProcessLifecycleOwner provides a lifecycle for the whole application process
+                //implementation "androidx.lifecycle:lifecycle-process:$lifecycle_version"
+
+                def room_version = dict['gl_room_version']
+                if (androidx_room_auto_dependencies) {
+                    addForceDep(it, score, "androidx.room:room-runtime:$room_version")
+                    // optional - Kotlin Extensions and Coroutines support for Room
+                    addForceDep(it, score, "androidx.room:room-ktx:$room_version")
+                    addForceDep(it, score, "androidx.room:room-paging:2.5.0-alpha01")
+                    //sqlite/sqlite-framework 子依赖
+                    kapt "androidx.room:room-compiler:$room_version"
+                }
+
+                def nav_version = "2.4.1"
+                // Java language implementation
+                addForceDep(it, score, "androidx.navigation:navigation-fragment:$nav_version")
+                addForceDep(it, score, "androidx.navigation:navigation-ui:$nav_version")
+                // Kotlin
+                addForceDep(it, score, "androidx.navigation:navigation-fragment-ktx:$nav_version")
+                addForceDep(it, score, "androidx.navigation:navigation-ui-ktx:$nav_version")
+
+                //kotlin相关
+                addForceDep(it, score, "org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
+                addForceDep(it, score, "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.1")
+                //paging：轻松地在应用的 RecyclerView 中逐步妥善地加载数据
+                def paging_version = "3.1.1"
+                addForceDep(it, score, "androidx.paging:paging-runtime:$paging_version")
+                // alternatively - without Android dependencies for tests
+                testImplementation "androidx.paging:paging-common:$paging_version"
+
+                //单元测试
+                testImplementation 'junit:junit:4.13.2'
+                androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+                androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+                /** AndroidX 组件库列表**/
+            }
+        }
+    }
+
+    println("结束默认配置: " + p.name)
+}
+
+//所有项目配置
+allprojects { Project p ->
+
+    //repositories{} 不能在这重复定义 新版本在settings.gradle pluginManagement已经定义
+
+    configurations.all { //对该集合中的所有对象执行给定的闭包
+        //每隔24小时检查远程依赖是否存在更新
+        resolutionStrategy.cacheChangingModulesFor 24, 'hours'
+        //每隔10分钟..
+        //resolutionStrategy.cacheChangingModulesFor 10, 'minutes'
+        // 采用动态版本声明的依赖缓存10分钟
+        resolutionStrategy.cacheDynamicVersionsFor 10 * 60, 'seconds'
+
+        resolutionStrategy.dependencySubstitution {
+            //project&module依赖关系切换处理 方式1
+            //substitute(module("com.androidz.stub_modules:api_box:1.0.0")) using(project(":stub_modules:api_box"))
+            //substitute(module("com.androidz.stub_modules:constant_box:1.0.0")) using(project(":stub_modules:constant_box"))
+        }
+
+        resolutionStrategy {
+            //force 'xxx'
+            all_forceDep_map.each { String e ->
+                force(e)
+                //println "all_forceDep_map each: $e"
+            }
+        }
+
+
+        //排除依赖module
+
+        //偏门工具包
+        exclude group: 'androidx.documentfile', module: 'documentfile'
+        //+--- androidx.legacy:legacy-support-core-utils
+        exclude group: 'androidx.media', module: 'media' //+--- androidx.legacy:legacy-support-v4
+        exclude group: 'androidx.print', module: 'print'
+        //+--- androidx.legacy:legacy-support-core-utils:1.0.0
+
+    }
+
+    //verbose javac
+    //gradle.projectsEvaluated {
+    //    tasks.withType(JavaCompile) {
+    //        options.compilerArgs << "-Xlint" << "-verbose" << "-XprintRounds" << "-XprintProcessorInfo" << "-Xmaxerrs" << "2000"
+    //    }
+    //}
+
+    tasks.withType(JavaCompile).configureEach { task ->
+        task.options.encoding = 'UTF-8'
+        task.sourceCompatibility = JavaVersion.VERSION_1_8
+        task.targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+}

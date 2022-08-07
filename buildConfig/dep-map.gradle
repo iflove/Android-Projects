@@ -1,0 +1,210 @@
+/**
+ * 作用描述:
+ * 组件描述:
+ * 创建人 rentl
+ * 创建日期 2022/8/2
+ * 修改日期 2022/8/2
+ * 版权 pub
+ */
+
+ext {
+    //项目依赖方式全局切换设置
+    all_dep_option = "project" //module/project
+
+    //项目所有依赖声明详情map
+    all_dep_map = [
+            //依赖详情map   key项目别名, value依赖项信息
+            //空的工程
+            "lib_empty"      : [
+                    //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
+                    "project"       : ":lib_empty",
+                    "module"        : "com.androidz.base_modules:lib_empty:1.0.0",
+                    "aar"           : "",
+                    "all_dep_option": all_dep_option,
+                    //"my_dep_option" : "module",
+                    "description"   : "空的工程, 用于样例lib_xxx",
+                    "version"       : "1.0.0",
+                    "group"         : "com.androidz.base_modules",
+            ],
+
+            //非常常用的基础lib project stub_modules
+            "api_box"        : [
+                    //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
+                    "project"       : ":stub_modules:api_box", //基础api盒子, 只放接口,抽象类,基础bean
+                    "module"        : "com.androidz.stub_modules:api_box:1.0.0",
+                    "all_dep_option": all_dep_option,
+                    "my_dep_option" : "project",
+            ],
+            "constant_box"   : [
+                    //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
+                    "project"       : ":stub_modules:constant_box", //基础常量池盒子, 只放常量
+                    "module"        : "com.androidz.stub_modules:constant_box:1.0.0",
+                    "all_dep_option": all_dep_option,
+                    "my_dep_option" : "project",
+            ],
+            "lib_baseAndroid": [
+                    //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
+                    "project"       : ":base_modules:lib_baseAndroid", //
+                    "module"        : "com.androidz.base_modules:lib_baseAndroid:1.0.0",
+                    "all_dep_option": all_dep_option,
+                    //"my_dep_option" : "project",
+            ],
+            "drouter"        : [
+                    //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
+                    "project"       : "",
+                    "module"        : "io.github.didi:drouter-api:2.4.2",
+                    "all_dep_option": all_dep_option,
+                    "my_dep_option" : "module",
+            ],
+    ]
+
+    //添加到map
+    addDep = { String score = "implementation", String key ->
+        println "addDep: $key"
+        Map<String, String> map = new HashMap<>(all_dep_map[key])
+        map.put("score", score.trim())
+        return map
+    }
+    modules_dependencies = [
+            //key项目PATH, value依赖项
+            ":app"                         : [
+                    //依赖详情map
+                    //addDep("lib_empty"),
+                    addDep("api_box"),
+                    addDep("constant_box"),
+                    addDep("drouter"),
+                    addDep("lib_baseAndroid"),
+            ],
+            ":base_modules:lib_baseAndroid": [
+                    //依赖详情map
+                    addDep("drouter"),
+                    addDep("api_box"),
+                    addDep("constant_box"),
+            ],
+    ]
+    println "modules_dependencies: " + modules_dependencies
+    utils = [
+            applyDependency: { Project p1, Map<String, String> map ->
+                def publish_channel = false
+                //println "Start parametes: applyDependency tasks = " + gradle.startParameter.getTaskNames()
+                p1.gradle.startParameter.getTaskNames().each { task ->
+                    //println("task: " + task)
+                    if (task.contains("publish")) {
+                        publish_channel = true
+                    }
+                }
+                def name = p1.name
+                def isApplication = p1.pluginManager.hasPlugin("com.android.application")
+                def projectInfo = map.getOrDefault("project", "")
+                def moduleInfo = map.getOrDefault("module", "")
+                def aarInfo = map.getOrDefault("aar", "")
+                def all_dep_option = map.getOrDefault("all_dep_option", "")
+                def my_dep_option = map.getOrDefault("my_dep_option", "")
+                def score = map.getOrDefault("score", "implementation")
+                if (publish_channel) {
+                    score = "compileOnly"
+                }
+                //println "> applyDependency: ${name} ${isApplication ? "isApp" : ""}, map: " + map
+                if (projectInfo.isBlank() && moduleInfo.isBlank() && aarInfo.isBlank()) {
+                    System.err.println("warning: projectInfo.isBlank() && moduleInfo.isBlank() && aarInfo.isBlank()")
+                    return
+                }
+                boolean applyProject = ("project" == my_dep_option) && !projectInfo.isBlank()
+                boolean applyModule = ("module" == my_dep_option) && !moduleInfo.isBlank()
+                boolean applyAAR = ("aar" == my_dep_option) && !aarInfo.isBlank()
+
+                if (!(applyProject || applyModule || applyAAR)) {
+                    applyProject = ("project" == all_dep_option) && !projectInfo.isBlank()
+                    applyModule = ("module" == all_dep_option) && !moduleInfo.isBlank()
+                    applyAAR = ("aar" == all_dep_option) && !aarInfo.isBlank()
+                }
+
+                if (applyProject) {
+                    Project depProject = p1.findProject(projectInfo)
+                    if (depProject == null) {
+                        throw new Exception("请检查 ${projectInfo}")
+                    }
+                    p1.dependencies.add(score, depProject)
+                    //println "> applyDependency: ${name} ${isApplication ? "isApp" : ""}, score:$score, addProject: " + projectInfo
+                    return "$score project('$projectInfo')"
+                } else if (applyModule) {
+                    p1.dependencies.add(score, moduleInfo, { changing = moduleInfo.contains('com.androidz') })
+                    //println "> applyDependency: ${name} ${isApplication ? "isApp" : ""}, score:$score, addModule: " + moduleInfo
+                    return "$score '$moduleInfo'"
+                } else if (applyAAR) {
+                    ConfigurableFileCollection depProject = p1.files(aarInfo)
+                    if (depProject == null) {
+                        throw new Exception("请检查 ${aarInfo}")
+                    }
+                    p1.dependencies.add(score, depProject)
+                    //println "> applyDependency: ${name} ${isApplication ? "isApp" : ""}, score:$score, addAar: " + moduleInfo
+                    return "$score files('$aarInfo')"
+                }
+                return ""
+            }
+    ]
+}
+
+subprojects { Project p ->
+
+    //评估后阶段
+    afterEvaluate { Project p1 ->
+        //如果不是Android项目请处理
+        //println "> afterEvaluate: " + p1
+        if (modules_dependencies.isEmpty()) {
+            return
+        }
+        def list = modules_dependencies.get(p1.path)
+        def hasAppPlugin = p1.ext.find("hasAppPlugin")
+        if (list == null) {
+            return
+        }
+        def logStr = new StringBuilder(p1.name)
+        logStr.append(",配置动态依赖阶段 (可参照输出日志,修改静态依赖)")
+        logStr.append("\n")
+        logStr.append("dependencies {")
+        logStr.append("\n")
+        //动态依赖
+        list.each { e ->
+            def ret = rootProject.ext.utils.applyDependency(p1, e)
+            logStr.append("     ")
+            logStr.append(ret)
+            logStr.append("\n")
+        }
+        logStr.append("}\n")
+        println logStr
+
+        def variants
+        if (p1.plugins.hasPlugin('com.android.library')) {
+            variants = p1.android.libraryVariants
+        } else if (p1.plugins.hasPlugin('com.android.application')) {
+            variants = p1.android.applicationVariants
+        }
+        if (variants != null) {
+            variants.all { variant ->
+                tasks.create(name: "_showDependencies${variant.name.capitalize()}",
+                        description: "展示所有依赖") {
+                    doLast {
+                        println "展示所有依赖"
+                        Configuration configuration
+                        try {
+                            // 3.x
+                            configuration = project.configurations."${variant.name}CompileClasspath"
+                        } catch (Exception e) {
+                            // 2.x
+                            configuration = project.configurations."_${variant.name}Compile"
+                        }
+                        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
+                            def identifier = it.module.id
+                            println("${identifier.group}:${identifier.name}:${identifier.version}")
+                        }
+                        println ""
+                        //可以打印重复依赖，或者记录文件中
+                    }
+                }
+            }
+        }
+
+        println("结束配置dep-map: " + p1.name)
+    }
+}

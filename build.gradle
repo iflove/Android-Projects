@@ -1,0 +1,50 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+//buildscript 、tools plugins **必须放在首行**
+buildscript {
+    ext {
+        //maven repo ==>maven-publish.gradle
+        maven_local_repo_url = "$projectDir/.repo"
+        maven_nexus_snapshots_repo_url = 'http://192.168.23.64:8081/repository/AndroidUndead-snapshots/'
+        maven_nexus_releases_repo_url = 'http://192.168.23.64:8081/repository/AndroidUndead-releases/'
+
+    }
+
+    repositories {
+        gradlePluginPortal() //很重要！
+        mavenCentral()
+        google()
+        maven { url "https://jitpack.io" }
+
+        // didi/DRouter
+        maven { url('https://s01.oss.sonatype.org/content/repositories/releases/') }
+
+    }
+    dependencies {
+        //新版本更改为底下plugins
+        //classpath "com.android.tools.build:gradle:7.2.2"
+        //classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10"
+
+        // https://github.com/didi/DRouter/wiki
+        classpath "io.github.didi:drouter-plugin:1.3.0"
+    }
+}
+
+plugins {
+    //Android Gradle 插件版本说明  https://developer.android.com/studio/releases/gradle-plugin?hl=zh_cn
+    id 'com.android.application' version '7.2.2' apply false
+    id 'com.android.library' version '7.2.2' apply false
+    id 'org.jetbrains.kotlin.android' version '1.7.10' apply false
+}
+
+
+// 默认clean task
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+
+//应用全局默认配置
+apply from: rootProject.file('./buildConfig/baseAndroid.gradle')
+//apply from: rootProject.file('./buildConfig/dep-map.gradle')
+

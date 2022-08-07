@@ -1,0 +1,54 @@
+def include_with_export_api = true
+android {
+    resourcePrefix "api_"
+    defaultConfig {
+        versionCode 1
+        versionName "1.0.0"
+        //Usage:
+        //implementation 'com.androidz.stub_modules:api_box:1.0.0'
+    }
+    buildFeatures {
+        aidl = false
+        buildConfig = false
+        compose = false
+        prefab = false
+        renderScript = false
+        resValues = false
+        shaders = false
+    }
+    //接口暴露的形式——.api化.
+    def export_api_src_dir = 'src/export_api'
+
+    if (include_with_export_api) {
+        sourceSets {
+            main {
+                def projects = rootProject.getAllprojects()
+                //println projects
+                for (Project p in projects) {
+                    if (p == rootProject) {
+                        continue
+                    }
+                    //println ":" + p.getName()
+                    if (p.file(export_api_src_dir).exists()) {
+                        java.srcDir(p.file(export_api_src_dir))
+                        println "include_with_export_api: " + p.file(export_api_src_dir)
+                    }
+                }
+            }
+        }
+    }
+
+    dependencies {
+        //不要依赖实现
+    }
+}
+
+if (!include_with_export_api) {
+    dependencies {
+
+    }
+}
+
+if (!hasAppPlugin) {
+    apply from: rootProject.file('./buildConfig/maven-publish.gradle')
+}

@@ -1,0 +1,226 @@
+//Gradle 设置文件 https://developer.android.com/studio/build
+
+pluginManagement {//必须开头
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+//变量
+ext {
+    nexus_dep_option = false //true: nexus 启用 false: 禁用
+    //maven repo
+    maven_local_repo_url = "$rootProject.projectDir.path/.repo"
+    maven_nexus_snapshots_repo_url = 'http://192.168.23.64:8081/repository/AndroidUndead-snapshots/'
+    maven_nexus_releases_repo_url = 'http://192.168.23.64:8081/repository/AndroidUndead-releases/'
+}
+
+dependencyResolutionManagement {
+
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+        maven { url uri('https://s01.oss.sonatype.org/content/repositories/releases/')}
+
+        maven {
+            //println "$maven_local_repo_url"
+            url maven_local_repo_url
+        }
+        if (nexus_dep_option) {
+            maven {
+                url maven_nexus_snapshots_repo_url
+                allowInsecureProtocol = true
+                credentials {
+                    username = "guest"
+                    password = "guest"
+                }
+            }
+            maven {
+                url maven_nexus_releases_repo_url
+                allowInsecureProtocol = true
+                credentials {
+                    username = "guest"
+                    password = "guest"
+                }
+            }
+        }
+    }
+}
+
+//埋钩子
+static def formatConst(long ts) {
+    long oneMin = 60_000L
+    long oneSec = 1000L
+    if (ts == oneMin) {
+        return "1 m"
+    }
+    if (ts == oneSec) {
+        return "1 s"
+    }
+    if (ts > oneMin) {
+        int m = ts / oneMin
+        int s = (ts - m * oneMin) / oneSec
+        int sss = (ts - m * oneMin) - s * oneSec
+        return "${m} m $s s $sss ms"
+    }
+    if (ts > 1000) {
+        int s = ts / oneSec
+        int sss = ts - s * oneSec
+        return "$s s $sss ms"
+    }
+    return "${ts} ms"
+}
+
+///简单打印构建耗时
+//初始化阶段开始时间
+long beginOfSetting = System.currentTimeMillis()
+//配置阶段开始时间
+def beginOfConfig
+//配置阶段是否开始了, 只执行一次
+def configHasBegin = false
+//存放每一个 build.gradle 执行以前的时间
+def beginOfProjectConfig = new HashMap()
+//执行阶段开始时间
+def beginOfTaskExecute
+//初始化阶段执行完毕
+gradle.projectsLoaded {
+    println "初始化总 in ${formatConst(System.currentTimeMillis() - beginOfSetting)} "
+}
+
+//build.gradle 执行前
+gradle.beforeProject { Project project ->
+    if (!configHasBegin) {
+        configHasBegin = true
+        beginOfConfig = System.currentTimeMillis()
+    }
+    beginOfProjectConfig.put(project, System.currentTimeMillis())
+}
+
+//build.gradle 执行后
+gradle.afterProject { project ->
+    def begin = beginOfProjectConfig.get(project)
+    println "配置阶段, $project in：${formatConst(System.currentTimeMillis() - begin)} "
+}
+
+//配置阶段完毕
+gradle.taskGraph.whenReady {
+    println "配置阶段总 in：${formatConst(System.currentTimeMillis() - beginOfConfig)} "
+    beginOfTaskExecute = System.currentTimeMillis()
+}
+
+//执行阶段
+gradle.taskGraph.beforeTask { task ->
+    task.doFirst {
+        task.ext.beginOfTask = System.currentTimeMillis()
+    }
+
+    task.doLast {
+        println "执行阶段, $task in：${formatConst(System.currentTimeMillis() - task.ext.beginOfTask)} "
+    }
+}
+
+//执行阶段完毕
+gradle.buildFinished {
+    if (beginOfTaskExecute == null) {
+        return
+    }
+    //println beginOfTaskExecute
+    println "执行阶段结束 in：${formatConst(System.currentTimeMillis() - beginOfTaskExecute)}"
+}
+
+
+//Android 不灭
+rootProject.name = "Android-Undead"
+include ':app'
+//include ':buildConfig'
+//include ':android-tools'
+//include ':keystore'
+
+def sub_father = ':' //子项目父工程名, 更为了能Find Usages
+
+///基础模块
+//sub_father = ':base_modules'
+//include '',
+//        "$sub_father:lib_empty",
+        ''
+
+def base_modules_name = new ArrayList<String>()
+def base_modules_symbol = new ArrayList<String>()
+for (f in file("base_modules").listFiles()) {
+    if (f.isDirectory() && new File(f, "build.gradle").exists()) {
+        def name = ":base_modules:${f.name}"
+        base_modules_name.add("${name}")
+        base_modules_symbol.add("'${name}'")
+    }
+}
+//基础模块动态添加 (考虑的基础模块有很多)
+def base_modules_dynamically_add = true
+if (base_modules_dynamically_add) {
+    //动态添加目录底下所有
+    base_modules_name.forEach {
+        include(it)
+    }
+} else {
+    //手动按需添加
+    def include_base_modules_str = "include '',\n"
+    base_modules_symbol.forEach {
+        include_base_modules_str += "$it,\n"
+    }
+    include_base_modules_str += "''"
+    println "输出include脚本, 按需开启\n" + include_base_modules_str + "\n输出include脚本, 按需开启"
+
+    //Gradle窗口: 输出include脚本, 按需开启
+    //include '',
+    //        ':base_modules:lib_empty',
+    //        ''
+}
+
+println "> Configure 基础模块 : ${base_modules_symbol}"
+
+///根模块
+sub_father = ':stub_modules'
+include '',
+        "$sub_father:api_box",
+        "$sub_father:constant_box",
+        ''
+
+
+//业务模块
+def business_modules_name = new ArrayList<String>()
+def business_modules_symbol = new ArrayList<String>()
+for (f in file("business_modules").listFiles()) {
+    if (f.isDirectory() && new File(f, "build.gradle").exists()) {
+        def name = ":business_modules:${f.name}"
+        business_modules_name.add("${name}")
+        business_modules_symbol.add("'${name}'")
+    }
+}
+//业务模块动态添加 (考虑的业务模块有很多)
+def business_modules_dynamically_add = true
+if (business_modules_dynamically_add) {
+    //动态添加目录底下所有
+    business_modules_name.forEach {
+        include(it)
+    }
+} else {
+    //手动按需添加
+    def include_business_modules_str = "include '',\n"
+    business_modules_symbol.forEach {
+        include_business_modules_str += "$it,\n"
+    }
+    include_business_modules_str += "''"
+    println "输出include脚本, 按需开启\n" + include_business_modules_str + "\n输出include脚本, 按需开启"
+
+    //Gradle窗口: 输出include脚本, 按需开启
+    //include '',
+    //        ':business_modules:lib_attendance',
+    //        ':business_modules:lib_consume',
+    //        ':business_modules:lib_family_phone',
+    //        ''
+}
+
+println "> Configure 业务模块 : ${business_modules_symbol}"

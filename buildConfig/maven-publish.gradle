@@ -1,0 +1,73 @@
+/**
+ * 作用描述: maven版本发布共享库管理,依赖maven可大大节省编译时间
+ * 组件描述:
+ * 创建人 rentl
+ * 创建日期 2022/1/30
+ * 修改日期 2022/1/30
+ * 版权 pub
+ */
+println 'Executing maven-publish...'
+apply plugin: 'maven-publish'
+def ENV = System.getenv()
+
+task generateSourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier 'sources'
+}
+
+def groupIdStr = ext.find("groupId")
+def artifactIdStr = ext.find("artifactId")
+if (groupIdStr == null) {
+    System.err.println('Executing maven-publish fail. groupId == null')
+    throw new IllegalArgumentException('Executing maven-publish fail. groupId == null')
+}
+if (artifactIdStr == null) {
+    System.err.println('Executing maven-publish fail. artifactId == null')
+    throw new IllegalArgumentException('Executing maven-publish fail. artifactId == null')
+}
+
+println "Executing maven-publish: groupId=$groupId, artifactId=$artifactId"
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = "$groupIdStr"
+                artifactId = "$artifactIdStr"
+                version = project.android.defaultConfig.versionName
+                artifact generateSourcesJar
+            }
+        }
+        repositories {
+            maven {
+                url = rootProject.ext.maven_local_repo_url
+            }
+            maven {
+                name = "nexus"
+                url = project.android.defaultConfig.versionName.endsWith('SNAPSHOT') ? rootProject.ext.maven_nexus_snapshots_repo_url : rootProject.ext.maven_nexus_releases_repo_url
+                allowInsecureProtocol = true
+                // 仓库用户名密码
+                credentials {
+                    username = ENV['NEXUS_NAME']
+                    password = ENV['NEXUS_PWD']
+                }
+            }
+        }
+    }
+    def publishTask = project.tasks.getByName('publishReleasePublicationToMavenRepository')
+    if (publishTask != null) {
+        publishTask.doLast {
+            println "maven-publish to .repo, Usage:\nimplementation '${groupIdStr}:${artifactIdStr}:${project.android.defaultConfig.versionName}'"
+        }
+    }
+
+    def publishTask2 = project.tasks.getByName('publishReleasePublicationToNexusRepository')
+    if (publishTask2 != null) {
+        publishTask2.doLast {
+            println "maven-publish to nexus, Usage:\nimplementation '${groupIdStr}:${artifactIdStr}:${project.android.defaultConfig.versionName}'"
+        }
+    }
+}
+
+
