@@ -46,5 +46,7 @@ task clean(type: Delete) {
 
 //应用全局默认配置
 apply from: rootProject.file('./buildConfig/baseAndroid.gradle')
+
+//旧方案,集中管理,模块过多时
 //apply from: rootProject.file('./buildConfig/dep-map.gradle')
 

@@ -58,6 +58,8 @@ ext {
         return Boolean.parseBoolean(properties[key])
     }
 
+    //项目依赖方式全局切换设置
+    all_dep_option = "project" //module/project
     modules_dependencies = ['': '']
     //项目中all maven依赖mapping版本信息配置
     def mapping = new Properties()
@@ -88,7 +90,7 @@ ext {
         //println "bindInfo " + bindInfo
         if (bindInfo instanceof String) {
             dh.add(score, bindInfo, { changing = bindInfo.contains('com.androidz') })
-            println "addAliasDep>> " + score + " '${bindInfo}'"
+            println "addRelDep: " + score + " '${bindInfo}'"
         } else if (bindInfo instanceof Map) {
             def map = bindInfo as Map
             def projectInfo = map.getOrDefault("project", "")
@@ -118,11 +120,11 @@ ext {
                 dh.add(score, depProject)
                 //println "> applyDependency: ${p.name} , score:$score, addProject: " + projectInfo
 
-                println "addAliasDep>> " + "$score project('$projectInfo')"
+                println "addRelDep: " + "$score project('$projectInfo')"
             } else if (applyModule) {
                 dh.add(score, moduleInfo, { changing = moduleInfo.contains('com.androidz') })
                 //println "> applyDependency: ${p.name} , score:$score, addModule: " + moduleInfo
-                println "addAliasDep>> " + "$score '$moduleInfo'"
+                println "addRelDep: " + "$score '$moduleInfo'"
             } else if (applyAAR) {
                 ConfigurableFileCollection depProject = p.files(aarInfo)
                 if (depProject == null) {
@@ -130,7 +132,7 @@ ext {
                 }
                 dh.add(score, depProject)
                 //println "> applyDependency: ${p.name} , score:$score, addAar: " + moduleInfo
-                println "addAliasDep>> " + "$score files('$aarInfo')"
+                println "addRelDep: " + "$score files('$aarInfo')"
             }
         }
     }
@@ -157,10 +159,7 @@ subprojects { Project p ->
         if (artifactId == null || artifactId.isEmpty()) {
             artifactId = projectName
         }
-        String projectPath = dict['project']
-        if (projectPath == null || projectPath.isEmpty()) {
-            projectPath = p.path
-        }
+        String projectPath = p.path
 
         //全局模块依赖map
         Map<String, String> depMap = new HashMap<>()
@@ -219,7 +218,7 @@ subprojects { Project p ->
     //评估后阶段
     afterEvaluate { Project p1 ->
         println("评估后阶段: " + p1.name + " depth " + p1.depth)
-        println "modules_dependencies: " + modules_dependencies
+        //println "modules_dependencies: " + modules_dependencies
 
         //如果不是Android项目请处理
         p.plugins.apply("kotlin-parcelize") //add：2022-08-03  Please see url: https://developer.android.com/kotlin/parcelize
