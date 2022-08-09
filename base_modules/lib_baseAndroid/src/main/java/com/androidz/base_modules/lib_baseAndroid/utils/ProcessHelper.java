@@ -5,7 +5,7 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.os.Build;
 
-import com.androidz.base_modules.baseAndroid.BaseAndroid;
+import com.androidz.base_modules.lib_baseAndroid.BaseAndroid;
 
 import org.apache.commons.lang3.StringUtils;
 

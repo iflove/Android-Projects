@@ -14,7 +14,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
-import com.androidz.logextlibrary.Logg;
+import com.androidz.base_modules.lib_logger.Logg;
 
 import java.util.ArrayList;
 import java.util.Arrays;

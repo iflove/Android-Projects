@@ -10,7 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidUndead">
         <activity
-            android:name="com.androidz.android_undead.MainActivity"
+            android:name="com.androidz.base_modules.lib_logger.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
