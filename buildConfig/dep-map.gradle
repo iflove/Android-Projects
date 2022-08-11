@@ -28,17 +28,17 @@ ext {
             ],
 
             //非常常用的基础lib project stub_modules
-            "api_box"        : [
+            "common_api"        : [
                     //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
-                    "project"       : ":stub_modules:api_box", //基础api盒子, 只放接口,抽象类,基础bean
-                    "module"        : "com.androidz.stub_modules:api_box:1.0.0",
+                    "project"       : ":stub_modules:common_api", //基础api盒子, 只放接口,抽象类,基础bean
+                    "module"        : "com.androidz.stub_modules:common_api:1.0.0",
                     "all_dep_option": all_dep_option,
                     "my_dep_option" : "project",
             ],
-            "constant_box"   : [
+            "common_constant"   : [
                     //project:项目PATH, module:maven, aar:aar文件, all_dep_option:全局参数, my_dep_option:单项参数
-                    "project"       : ":stub_modules:constant_box", //基础常量池盒子, 只放常量
-                    "module"        : "com.androidz.stub_modules:constant_box:1.0.0",
+                    "project"       : ":stub_modules:common_constant", //基础常量池盒子, 只放常量
+                    "module"        : "com.androidz.stub_modules:common_constant:1.0.0",
                     "all_dep_option": all_dep_option,
                     "my_dep_option" : "project",
             ],
@@ -70,16 +70,16 @@ ext {
             ":app"                         : [
                     //依赖详情map
                     //addDep("lib_empty"),
-                    addDep("api_box"),
-                    addDep("constant_box"),
+                    addDep("common_api"),
+                    addDep("common_constant"),
                     addDep("drouter"),
                     addDep("lib_baseAndroid"),
             ],
             ":base_modules:lib_baseAndroid": [
                     //依赖详情map
                     addDep("drouter"),
-                    addDep("api_box"),
-                    addDep("constant_box"),
+                    addDep("common_api"),
+                    addDep("common_constant"),
             ],
     ]
     println "modules_dependencies: " + modules_dependencies

@@ -25,8 +25,8 @@ android {
         //api "io.github.didi:drouter-api-page:1.0.0"      // Page
         //api "io.github.didi:drouter-api-process:1.0.0"   // Process
 
-        addAliasDep(project, 'api_box')
-        addAliasDep(project, 'constant_box')
+        addAliasDep(project, 'common_api')
+        addAliasDep(project, 'common_constant')
         addAliasDep(project, 'drouter-api')
         addAliasDep(project, 'lib_baseAndroid')
         addAliasDep(project, 'lib_empty')

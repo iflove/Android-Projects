@@ -184,8 +184,8 @@ println "> Configure 基础模块 : ${base_modules_symbol}"
 ///根模块
 sub_father = ':stub_modules'
 include '',
-        "$sub_father:api_box",
-        "$sub_father:constant_box",
+        "$sub_father:common_api",
+        "$sub_father:common_constant",
         ''
 
 

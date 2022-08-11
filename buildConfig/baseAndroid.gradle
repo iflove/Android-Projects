@@ -500,8 +500,8 @@ allprojects { Project p ->
 
         resolutionStrategy.dependencySubstitution {
             //project&module依赖关系切换处理 方式1
-            //substitute(module("com.androidz.stub_modules:api_box:1.0.0")) using(project(":stub_modules:api_box"))
-            //substitute(module("com.androidz.stub_modules:constant_box:1.0.0")) using(project(":stub_modules:constant_box"))
+            //substitute(module("com.androidz.stub_modules:common_api:1.0.0")) using(project(":stub_modules:common_api"))
+            //substitute(module("com.androidz.stub_modules:common_constant:1.0.0")) using(project(":stub_modules:common_constant"))
         }
 
         resolutionStrategy {

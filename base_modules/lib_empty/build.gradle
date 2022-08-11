@@ -15,8 +15,8 @@ android {
         }
     }
     dependencies {
-        addAliasDep(project, 'api_box')
-        addAliasDep(project, 'constant_box')
+        addAliasDep(project, 'common_api')
+        addAliasDep(project, 'common_constant')
         addAliasDep(project, 'drouter-api')
         addAliasDep(project, 'lib_baseAndroid')
     }

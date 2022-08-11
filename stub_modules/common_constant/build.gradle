@@ -1,10 +1,10 @@
 android {
-    resourcePrefix "constant_box_"
+    resourcePrefix "common_constant_"
     defaultConfig {
         versionCode 1
         versionName "1.0.0"
         //Usage:
-        //implementation 'com.androidz.stub_modules:constant_box:1.0.0'
+        //implementation 'com.androidz.stub_modules:common_constant:1.0.0'
     }
     buildFeatures {
         aidl = false

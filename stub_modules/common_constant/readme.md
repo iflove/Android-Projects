@@ -1,4 +1,4 @@
-# constant_box
+# common_constant
 
 > 只允许定义java,Android 常量
 

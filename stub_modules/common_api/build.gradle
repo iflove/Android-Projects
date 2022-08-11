@@ -5,7 +5,7 @@ android {
         versionCode 1
         versionName "1.0.0"
         //Usage:
-        //implementation 'com.androidz.stub_modules:api_box:1.0.0'
+        //implementation 'com.androidz.stub_modules:common_api:1.0.0'
     }
     buildFeatures {
         aidl = false

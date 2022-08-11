@@ -1,7 +1,7 @@
 # stub_modules
 
-├── api_box             
-├── constant_box
+├── common_api             
+├── common_constant
 
 引言：
 
