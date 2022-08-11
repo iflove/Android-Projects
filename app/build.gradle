@@ -30,5 +30,7 @@ android {
         addAliasDep(project, 'drouter-api')
         addAliasDep(project, 'lib_baseAndroid')
         addAliasDep(project, 'lib_empty')
+        addAliasDep(project, 'lib_logger')
+        addAliasDep(project, 'lib_logcat')
     }
 }
