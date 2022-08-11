@@ -185,13 +185,18 @@ subprojects { Project p ->
 
         //lib 下debugConfig配置文件
         def moduleDebugConfig = new File(projectDir, 'debugConfig.properties')
-        def libModulesIsLib = false
+        def libModulesIsLib = getBool(dict, 'libModulesIsLib') //全局
         if (moduleDebugConfig.exists()) {
             println 'load submodule debug configs: ' + moduleDebugConfig.getAbsolutePath()
-            dict.load(new FileInputStream(moduleDebugConfig))
-            libModulesIsLib = getBool(dict, 'libModulesIsLib')
+            def sub_dict = new Properties()
+            sub_dict.load(new FileInputStream(moduleDebugConfig))
+            if (sub_dict.containsKey('libModulesIsLib')) {
+                def sub_libModulesIsLib = getBool(sub_dict, 'libModulesIsLib')
+                libModulesIsLib = sub_libModulesIsLib
+            }
             p1.ext.set("libModulesIsLib", libModulesIsLib)
-
+        } else { //没有配置文件, 默认app
+            libModulesIsLib = false
         }
 
         def hasAppPlugin = false

@@ -1,0 +1,24 @@
+ext.set("androidx_room_auto_dependencies", true)
+android {
+    resourcePrefix "base_room_db_"
+
+    defaultConfig {
+
+        versionCode 1
+        versionName "1.0.0"
+        //versionName "1.0.1-SNAPSHOT"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    dependencies {
+        addAliasDep(project, 'lib_logger')
+    }
+}
+if (!hasAppPlugin) {
+    apply from: rootProject.file('./buildConfig/maven-publish.gradle')
+}
