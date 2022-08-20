@@ -1,4 +1,4 @@
-package com.androidz.android_undead
+package com.androidz.android_projects
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

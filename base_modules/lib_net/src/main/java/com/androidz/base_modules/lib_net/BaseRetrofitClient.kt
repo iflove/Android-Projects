@@ -1,5 +1,6 @@
 package cn.mashang.screen.base_moudle.lib_net
 
+import com.androidz.base_modules.lib_net.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit

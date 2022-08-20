@@ -1,4 +1,4 @@
-package com.androidz.android_undead
+package com.androidz.android_projects
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

@@ -8,7 +8,7 @@ android {
 
 
     defaultConfig {
-        applicationId "com.androidz.android_undead"
+        applicationId "com.androidz.android_projects"
         versionCode 1
         versionName "1.0"
 
@@ -32,5 +32,7 @@ android {
         addAliasDep(project, 'lib_empty')
         addAliasDep(project, 'lib_logger')
         addAliasDep(project, 'lib_logcat')
+        addAliasDep(project, 'lib_net')
+        addAliasDep(project, 'lib_room_db')
     }
 }

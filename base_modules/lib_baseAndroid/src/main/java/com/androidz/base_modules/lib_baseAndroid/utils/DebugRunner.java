@@ -2,6 +2,8 @@ package com.androidz.base_modules.lib_baseAndroid.utils;
 
 import androidx.annotation.NonNull;
 
+import com.androidz.base_modules.lib_baseAndroid.BuildConfig;
+
 
 /**
  * 作用描述: debug组件消灭if判断,混淆时会移除

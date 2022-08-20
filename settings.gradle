@@ -134,7 +134,7 @@ gradle.buildFinished {
 
 
 //Android 不灭
-rootProject.name = "Android-Undead"
+rootProject.name = "Android-Projects"
 include ':app'
 //include ':buildConfig'
 //include ':android-tools'
