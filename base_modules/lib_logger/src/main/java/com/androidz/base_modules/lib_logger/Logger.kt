@@ -353,7 +353,9 @@ var BroadcastReceiver.log: Logger
     get() = Logg.log
     set(value) {}
 
-
+/**
+ * 灵活打印函数接口
+ */
 interface LogPrintln {
 
     fun println(logID: Int, level: Int, tag: String, msg: String)

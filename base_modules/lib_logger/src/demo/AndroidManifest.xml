@@ -8,6 +8,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:name="com.androidz.base_modules.lib_logger.App"
         android:theme="@style/Theme.AndroidUndead">
         <activity
             android:name="com.androidz.base_modules.lib_logger.MainActivity"

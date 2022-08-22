@@ -329,7 +329,7 @@ subprojects { Project p ->
                 }
                 release {
                     //shrinkResources true
-                    minifyEnabled true
+                    //minifyEnabled false
                     //开启zip对齐，加快资源的读取速度
                     zipAlignEnabled true
                     proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
