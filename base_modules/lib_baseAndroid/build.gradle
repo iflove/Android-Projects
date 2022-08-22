@@ -21,6 +21,7 @@ android {
 
         addAliasDep(project, 'lib_logger')
         //implementation 'com.github.iflove.Hunter:logExtlibrary:logExtlibrary-1.0'
+        //implementation 'com.github.iflove.Android-Projects:lib_logcat:3.0.2'
     }
 }
 if (!hasAppPlugin) {
