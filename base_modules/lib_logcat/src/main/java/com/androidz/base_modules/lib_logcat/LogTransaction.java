@@ -4,6 +4,7 @@ package com.androidz.base_modules.lib_logcat;
 import androidx.annotation.NonNull;
 
 /**
+ * 日志事务
  * Created by lazy on 2017/4/12.
  */
 

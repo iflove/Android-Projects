@@ -1,5 +1,8 @@
 package com.androidz.base_modules.lib_logcat;
 
+/**
+ * Created by lazy on 2017/4/12.
+ */
 public enum LogLevel {
 
     Verbose(Logcat.SHOW_VERBOSE_LOG),

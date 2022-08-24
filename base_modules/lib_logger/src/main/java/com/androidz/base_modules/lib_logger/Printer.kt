@@ -1,7 +1,7 @@
 package com.androidz.base_modules.lib_logger
 
 /**
- * 作用描述: 打印包装,方便调试
+ * 作用描述: 打印包装,方便调试 结合Logcat 使用堆栈信息定位会丟准确位置
  * 组件描述:
  * 创建人 rentl
  * 创建日期 2022/6/15

@@ -379,7 +379,7 @@ public final class Logcat {
             printLog(getStackTraceElement(INDEX), logLevel, msg, null, tags);
         }
         if (autoSaveLogToFile || canWriteLogToFile(tags)) {
-            writeLog(logLevel, msg, null, "", true, tags);
+            writeLog(logLevel, msg, null, "", true, 0, tags);
         }
     }
 
@@ -392,10 +392,10 @@ public final class Logcat {
         }
         boolean hasFile = filesName != null;
         if (hasFile) {
-            writeLog(logLevel, msg, jsonText, filesName, append, tags);
+            writeLog(logLevel, msg, jsonText, filesName, append, stackTraceOffset, tags);
         } else {
             if (autoSaveLogToFile || canWriteLogToFile(tags)) {
-                writeLog(logLevel, msg, jsonText, "", true, tags);
+                writeLog(logLevel, msg, jsonText, "", true, stackTraceOffset, tags);
             }
         }
     }
@@ -598,11 +598,11 @@ public final class Logcat {
      * 写Log 到文件
      */
     private static void writeLog(@LockLevel final int logLevel, final Object msg, @Nullable final String jsonText,
-                                 @Nullable final String logFileName, final boolean append, final String... tag) {
+                                 @Nullable final String logFileName, final boolean append, int stackTraceOffset, final String... tag) {
         if (NOT_SHOW_LOG != (logLevel &
                 fileSaveLogType)) {
             //当前线程的堆栈情况
-            final StackTraceElement stackTraceElement = getStackTraceElement(INDEX + 1);
+            final StackTraceElement stackTraceElement = getStackTraceElement(INDEX + 1 + stackTraceOffset);
             //linux thread ID
             Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);
             final long threadId = Process.myTid();

@@ -9,6 +9,9 @@ import com.androidz.base_modules.lib_logcat.extend.JLog;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+/**
+ * Created by lazy on 2017/4/12.
+ */
 
 public class Builder {
     String logSavePath = "";
