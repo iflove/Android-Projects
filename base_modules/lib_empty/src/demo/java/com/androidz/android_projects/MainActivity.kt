@@ -1,7 +1,7 @@
 package com.androidz.android_projects
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.androidz.base_modules.lib_empty.R
 
 class MainActivity : AppCompatActivity() {

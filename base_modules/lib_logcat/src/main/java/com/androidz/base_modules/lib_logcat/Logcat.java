@@ -69,6 +69,7 @@ public final class Logcat {
     /**
      * 换行符
      */
+    @NonNull
     static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
     static final String BLANK_STR = " ";

@@ -1,0 +1,27 @@
+android {
+    resourcePrefix "login_"
+
+    defaultConfig {
+
+        versionCode 1
+        versionName "1.0.1"
+        //versionName "1.0.1-SNAPSHOT"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    dependencies {
+        addAliasDep(project, 'common_api')
+        addAliasDep(project, 'common_constant')
+        addAliasDep(project, 'drouter-api')
+        addAliasDep(project, 'lib_baseAndroid')
+        addAliasDep(project, 'lib_logger')
+    }
+}
+if (!hasAppPlugin) {
+    apply from: rootProject.file('./buildConfig/maven-publish.gradle')
+}

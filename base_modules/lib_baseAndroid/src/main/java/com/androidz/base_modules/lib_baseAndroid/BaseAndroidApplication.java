@@ -36,6 +36,7 @@ public class BaseAndroidApplication extends Application {
     }
 
     /**
+     * 需要子类调用
      * 在ApplicationLifeCycle Init……之前
      *
      * @param base Context
@@ -44,6 +45,7 @@ public class BaseAndroidApplication extends Application {
     }
 
     /**
+     * 需要子类调用
      * ApplicationLifeCycle Init
      *
      * @param base Context
@@ -62,8 +64,10 @@ public class BaseAndroidApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        for (ApplicationLifeCycle applicationLifeCycle : mApplicationLifeCycles) {
-            applicationLifeCycle.onCreate();
+        if (mApplicationLifeCycles != null) {
+            for (ApplicationLifeCycle applicationLifeCycle : mApplicationLifeCycles) {
+                applicationLifeCycle.onCreate();
+            }
         }
     }
 

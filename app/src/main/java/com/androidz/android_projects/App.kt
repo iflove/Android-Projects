@@ -2,8 +2,8 @@ package com.androidz.android_projects
 
 import android.content.Context
 import android.util.Log
-import androidx.multidex.MultiDexApplication
 import com.androidz.base_modules.lib_baseAndroid.BaseAndroid
+import com.androidz.base_modules.lib_baseAndroid.BaseAndroidApplication
 import com.androidz.base_modules.lib_baseAndroid.utils.ProcessHelper
 import com.androidz.base_modules.lib_baseAndroid.utils.ResUtil
 import com.androidz.base_modules.lib_baseAndroid.utils.StorageUtils
@@ -12,6 +12,7 @@ import com.androidz.base_modules.lib_logcat.Logcat
 import com.androidz.base_modules.lib_logcat.extend.JLog
 import com.androidz.base_modules.lib_logger.Logg
 import com.androidz.base_modules.lib_logger.Logger
+import com.didi.drouter.api.DRouter
 
 
 /**
@@ -23,7 +24,7 @@ import com.androidz.base_modules.lib_logger.Logger
  * 修改日期 2022/8/20 20:07
  * 版权 pub
  */
-class App : MultiDexApplication() {
+class App : BaseAndroidApplication() {
     companion object {
 
         private const val TAG = "App"
@@ -32,6 +33,10 @@ class App : MultiDexApplication() {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         BaseAndroid.installRun(this)
+        initLog()
+        DRouter.init(this);
+        onAttachApplicationLifeCycleBefore(this)
+        onAttachApplicationLifeCycle(this)
     }
 
     override fun onCreate() {
@@ -41,9 +46,7 @@ class App : MultiDexApplication() {
     }
 
     private fun injectObj() {
-        initLog()
         ResUtil.inject(this, R::class.java.`package`.name)
-
     }
 
     private fun initLog() {

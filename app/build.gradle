@@ -29,10 +29,11 @@ android {
         addAliasDep(project, 'common_constant')
         addAliasDep(project, 'drouter-api')
         addAliasDep(project, 'lib_baseAndroid')
-        addAliasDep(project, 'lib_empty')
+        //addAliasDep(project, 'lib_empty')
         addAliasDep(project, 'lib_logger')
         addAliasDep(project, 'lib_logcat')
         addAliasDep(project, 'lib_net')
         addAliasDep(project, 'lib_room_db')
+        addAliasDep(project, 'login')
     }
 }
