@@ -16,3 +16,8 @@ com.github.iflove.Android-Projects:lib_room_db:3.0.2
 com.github.iflove.Android-Projects:lib_net:3.0.2
 com.github.iflove.Android-Projects:common_constant:3.0.2
 ```
+
+
+
+Android备忘条
+https://gist.github.com/iflove
