@@ -1,7 +1,8 @@
 package com.androidz.android_projects
 
 import android.content.Context
-import android.util.Log
+import android.os.Build
+import com.androidz.android_projects.utility.LoggHelper
 import com.androidz.base_modules.lib_baseAndroid.BaseAndroid
 import com.androidz.base_modules.lib_baseAndroid.BaseAndroidApplication
 import com.androidz.base_modules.lib_baseAndroid.utils.ProcessHelper
@@ -11,7 +12,6 @@ import com.androidz.base_modules.lib_logcat.Builder
 import com.androidz.base_modules.lib_logcat.Logcat
 import com.androidz.base_modules.lib_logcat.extend.JLog
 import com.androidz.base_modules.lib_logger.Logg
-import com.androidz.base_modules.lib_logger.Logger
 import com.didi.drouter.api.DRouter
 
 
@@ -90,49 +90,12 @@ class App : BaseAndroidApplication() {
         builder.addTagToFile(TAG)
         Logcat.initialize(this, builder.build())
 
-        Logg.log = object : Logger {
-            override fun v(tag: String, msg: String) {
-                Logcat.v().tag(tag).msg(msg).stackTrace(2).out()
-            }
+        LoggHelper.init()
 
-            override fun v(tag: String, msg: String, tr: Throwable) {
-                Logcat.v().tag(tag).msg(msg + '\n' + Log.getStackTraceString(tr)).stackTrace(2).out()
-            }
-
-            override fun d(tag: String, msg: String) {
-                Logcat.d().tag(tag).msg(msg).stackTrace(2).out()
-            }
-
-            override fun d(tag: String, msg: String, tr: Throwable) {
-                Logcat.d().tag(tag).msg(msg + '\n' + Log.getStackTraceString(tr)).stackTrace(2).out()
-            }
-
-            override fun i(tag: String, msg: String) {
-                Logcat.i().tag(tag).msg(msg).stackTrace(2).out()
-            }
-
-            override fun i(tag: String, msg: String, tr: Throwable) {
-                Logcat.i().tag(tag).msg(msg + '\n' + Log.getStackTraceString(tr)).stackTrace(2).out()
-            }
-
-            override fun w(tag: String, msg: String) {
-                Logcat.w().tag(tag).msg(msg).stackTrace(2).out()
-            }
-
-            override fun w(tag: String, msg: String, tr: Throwable) {
-                Logcat.w().tag(tag).msg(msg + '\n' + Log.getStackTraceString(tr)).stackTrace(2).out()
-            }
-
-            override fun e(tag: String, msg: String) {
-                Logcat.e().tag(tag).msg(msg).stackTrace(2).out()
-            }
-
-            override fun e(tag: String, msg: String, tr: Throwable) {
-                Logcat.e().tag(tag).msg(msg + '\n' + Log.getStackTraceString(tr)).stackTrace(2).out()
-            }
-
-        }
-
+        Logcat.d().file("devProp.txt").append(true).tag("").ln()
+            .msg("MODEL:").msg(Build.MODEL).ln()
+            .msg("SDK_INT:").msg(Build.VERSION.SDK_INT).ln()
+            .out(false, true)
 
     }
 

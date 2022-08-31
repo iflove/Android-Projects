@@ -39,4 +39,6 @@ public abstract class LogTransaction {
     public abstract LogTransaction stackTrace(int offset);
 
     public abstract LogTransaction out();
+
+    public abstract LogTransaction out(Boolean logCatShow, Boolean logFileEnable);
 }

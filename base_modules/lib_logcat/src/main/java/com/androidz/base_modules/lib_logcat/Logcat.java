@@ -1,6 +1,7 @@
 package com.androidz.base_modules.lib_logcat;
 
 import android.annotation.SuppressLint;
+import android.app.Application;
 import android.content.Context;
 import android.media.MediaScannerConnection;
 import android.os.Environment;
@@ -193,7 +194,7 @@ public final class Logcat {
      * @param config  Config
      */
     public static void initialize(@NonNull Context context, @NonNull Config config) {
-        Logcat.context = context.getApplicationContext();
+        Logcat.context = context instanceof Application ? context : context.getApplicationContext();
         pkgName = Logcat.context.getPackageName();
         initPrintThread();
         if (config.logSavePath == null || "".equals(config.logSavePath.trim())) {
@@ -387,9 +388,13 @@ public final class Logcat {
     /**
      * 输出日志
      */
-    static void out(@LockLevel final int logLevel, @Nullable String jsonText, Object msg, final String filesName, final boolean append, int stackTraceOffset, String... tags) {
-        if (NOT_SHOW_LOG != (logLevel & logCatShowLogType)) {
+    static void out(@LockLevel final int logLevel, @Nullable String jsonText, Object msg, final String filesName, final boolean append, int stackTraceOffset,
+                    Boolean logCatShow, Boolean logFileEnable, String... tags) {
+        if (NOT_SHOW_LOG != (logLevel & logCatShowLogType) && (!Boolean.FALSE.equals(logCatShow))) {
             printLog(getStackTraceElement(INDEX + stackTraceOffset), logLevel, msg, jsonText, tags);
+        }
+        if (Boolean.FALSE.equals(logFileEnable)) {
+            return;
         }
         boolean hasFile = filesName != null;
         if (hasFile) {

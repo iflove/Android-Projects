@@ -9,57 +9,19 @@ package com.androidz.base_modules.lib_logger
  * 版权 pub
  */
 class Printer(val tag: String, val isPrinter: Boolean = false) {
+    private lateinit var create: Logger
 
-    val log by lazy {
+    fun log(death: Int, vararg args: Any): Logger {
         if (isPrinter) {
-            Logg.log
-        } else {
-            //no 
-            object : Logger {
-                override fun d(tag: String, msg: String) {
-
-                }
-
-                override fun d(tag: String, msg: String, tr: Throwable) {
-
-                }
-
-                override fun e(tag: String, msg: String) {
-
-                }
-
-                override fun e(tag: String, msg: String, tr: Throwable) {
-
-                }
-
-                override fun i(tag: String, msg: String) {
-
-                }
-
-                override fun i(tag: String, msg: String, tr: Throwable) {
-
-                }
-
-                override fun v(tag: String, msg: String) {
-
-                }
-
-                override fun v(tag: String, msg: String, tr: Throwable) {
-
-                }
-
-                override fun w(tag: String, msg: String) {
-
-                }
-
-                override fun w(tag: String, msg: String, tr: Throwable) {
-
-                }
-
-                override fun println(logID: Int, level: Int, tag: String, msg: String) {
-                    super.println(logID, level, tag, msg)
-                }
+            val log = Logg.loggerFactory?.create(death, args)
+            if (log == null) {
+                return Logg.NO_LOG
+            } else {
+                create = log
             }
+            return create
+        } else { //no
+            return Logg.NO_LOG
         }
     }
 

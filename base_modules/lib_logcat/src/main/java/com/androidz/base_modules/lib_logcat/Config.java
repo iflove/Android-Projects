@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Created by lazy on 2017/4/12.
  */
-class Config {
+public final class Config {
 
     /**
      * 存放日志文件的目录全路径

@@ -100,7 +100,7 @@ final class LogStackRecord extends LogTransaction {
     }
 
     @Override
-    public LogTransaction out() {
+    public LogTransaction out(Boolean logCatShow, Boolean logFileEnable) {
         List<Object> msgsList = new ArrayList<>();
         List<String> tagsList = new ArrayList<>();
         String filesName = null;
@@ -169,8 +169,13 @@ final class LogStackRecord extends LogTransaction {
         String[] tags = new String[tagsList.size()];
         tagsList.toArray(tags);
         String msg = builder.toString();
-        Logcat.out(logLevel.value, jsonText, msg, filesName, fileAppend, stackTraceOffset, tags);
+        Logcat.out(logLevel.value, jsonText, msg, filesName, fileAppend, stackTraceOffset, logCatShow, logFileEnable, tags);
         return this;
+    }
+
+    @Override
+    public LogTransaction out() {
+        return out(null, null);
     }
 
     static final class Op {

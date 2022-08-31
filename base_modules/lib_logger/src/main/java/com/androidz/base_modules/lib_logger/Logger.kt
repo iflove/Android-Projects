@@ -39,6 +39,13 @@ interface Logger {
 }
 
 /**
+ * Logger工厂
+ */
+interface LoggerFactory {
+    fun create(death: Int, vararg args: Any): Logger
+}
+
+/**
  * Log 工具
  */
 class Logg {
@@ -55,7 +62,9 @@ class Logg {
         const val LOG_ID_4 = 4
         const val LOG_ID_5 = 5
 
-
+        /**
+         * 默认Log控制台输出
+         */
         private val DEFAULT = object : Logger {
 
             override fun v(tag: String, msg: String) {
@@ -107,6 +116,48 @@ class Logg {
         }
 
         /**
+         * NO Log 输出
+         */
+        val NO_LOG = object : Logger {
+
+            override fun v(tag: String, msg: String) {
+            }
+
+            override fun v(tag: String, msg: String, tr: Throwable) {
+            }
+
+            override fun d(tag: String, msg: String) {
+            }
+
+            override fun d(tag: String, msg: String, tr: Throwable) {
+            }
+
+            override fun i(tag: String, msg: String) {
+            }
+
+            override fun i(tag: String, msg: String, tr: Throwable) {
+            }
+
+            override fun w(tag: String, msg: String) {
+            }
+
+            override fun w(tag: String, msg: String, tr: Throwable) {
+            }
+
+            override fun e(tag: String, msg: String) {
+            }
+
+            override fun e(tag: String, msg: String, tr: Throwable) {
+            }
+
+            /**
+             * 灵活打印函数, 由logID logic handle
+             */
+            override fun println(logID: Int, level: Int, tag: String, msg: String) {
+            }
+        }
+
+        /**
          * shell 开启日志 setprop log.tag.Log D  setprop log.tag.Log 0 关闭日志
          */
         @JvmField
@@ -120,6 +171,9 @@ class Logg {
 
         @JvmStatic
         var log: Logger = DEFAULT
+
+        @JvmStatic
+        var loggerFactory: LoggerFactory? = null
 
         //由logID
         @JvmStatic

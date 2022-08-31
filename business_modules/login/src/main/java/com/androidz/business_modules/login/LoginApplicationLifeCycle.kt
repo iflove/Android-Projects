@@ -22,7 +22,7 @@ import com.didi.drouter.api.Extend
 )
 class LoginApplicationLifeCycle : BaseApplicationLifeCycle() {
     companion object {
-        private const val TAG = "LoginApplicationLifeCyc"
+        private const val TAG = "LoginApplicationLifeCycle"
     }
 
     override fun onCreate() {
