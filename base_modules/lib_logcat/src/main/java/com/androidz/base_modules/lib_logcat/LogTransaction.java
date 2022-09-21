@@ -22,6 +22,14 @@ public abstract class LogTransaction {
 
     public abstract LogTransaction file(@NonNull final String fileName);
 
+    /**
+     * 绝对文件
+     *
+     * @param path String
+     * @return
+     */
+    public abstract LogTransaction absFile(@NonNull final String path);
+
     public abstract LogTransaction ln();
 
     public abstract LogTransaction format(@NonNull final String format, Object... args);

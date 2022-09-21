@@ -22,6 +22,7 @@ public class Builder {
     boolean showStackTraceInfo = true;
     boolean showFileTimeInfo = true;
     boolean showFilePidInfo = true;
+    boolean showFileThreadName = false;
     boolean showFileLogLevel = true;
     boolean showFileLogTag = true;
     boolean showFileStackTraceInfo = true;

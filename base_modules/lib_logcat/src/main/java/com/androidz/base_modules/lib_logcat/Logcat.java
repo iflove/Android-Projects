@@ -169,6 +169,7 @@ public final class Logcat {
     private static boolean showStackTraceInfo;
     private static boolean showFileTimeInfo;
     private static boolean showFilePidInfo;
+    private static boolean showFileThreadName;
     private static boolean showFileLogLevel;
     private static boolean showFileLogTag;
     private static boolean showFileStackTraceInfo;
@@ -234,6 +235,7 @@ public final class Logcat {
         showStackTraceInfo = config.showStackTraceInfo;
         showFileTimeInfo = config.showFileTimeInfo;
         showFilePidInfo = config.showFilePidInfo;
+        showFileThreadName = config.showFileThreadName;
         showFileLogLevel = config.showFileLogLevel;
         showFileLogTag = config.showFileLogTag;
         showFileStackTraceInfo = config.showFileStackTraceInfo;
@@ -381,7 +383,7 @@ public final class Logcat {
             printLog(getStackTraceElement(INDEX), logLevel, msg, null, tags);
         }
         if (autoSaveLogToFile || canWriteLogToFile(tags)) {
-            writeLog(logLevel, msg, null, "", true, 0, tags);
+            writeLog(logLevel, msg, null, "", "", true, 0, tags);
         }
     }
 
@@ -389,7 +391,7 @@ public final class Logcat {
      * 输出日志
      */
     static void out(@LockLevel final int logLevel, @Nullable String jsonText, Object msg, final String filesName, final boolean append, int stackTraceOffset,
-                    Boolean logCatShow, Boolean logFileEnable, String... tags) {
+                    Boolean logCatShow, Boolean logFileEnable, final String absFile, String... tags) {
         if (NOT_SHOW_LOG != (logLevel & logCatShowLogType) && (!Boolean.FALSE.equals(logCatShow))) {
             printLog(getStackTraceElement(INDEX + stackTraceOffset), logLevel, msg, jsonText, tags);
         }
@@ -398,10 +400,10 @@ public final class Logcat {
         }
         boolean hasFile = filesName != null;
         if (hasFile) {
-            writeLog(logLevel, msg, jsonText, filesName, append, stackTraceOffset, tags);
+            writeLog(logLevel, msg, jsonText, filesName, absFile, append, stackTraceOffset, tags);
         } else {
             if (autoSaveLogToFile || canWriteLogToFile(tags)) {
-                writeLog(logLevel, msg, jsonText, "", true, stackTraceOffset, tags);
+                writeLog(logLevel, msg, jsonText, "", "", true, stackTraceOffset, tags);
             }
         }
     }
@@ -429,7 +431,7 @@ public final class Logcat {
         return false;
     }
 
-    private static void printLog(final StackTraceElement stackTraceElement, final int type, final Object objectMsg, final @Nullable String jsonText, final @Nullable String... tagArgs) {
+    private static void printLog(@Nullable final StackTraceElement stackTraceElement, final int type, final Object objectMsg, final @Nullable String jsonText, final @Nullable String... tagArgs) {
         checkPrintHandler();
         //linux thread ID
         Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);
@@ -441,10 +443,6 @@ public final class Logcat {
                 if (logCatShowLogType == NOT_SHOW_LOG) {
                     return;
                 }
-
-                String fileName = stackTraceElement.getFileName();
-                String methodName = stackTraceElement.getMethodName();
-                int lineNumber = stackTraceElement.getLineNumber();
 
                 StringBuilder tagBuilder = new StringBuilder();
                 boolean hasTop = topLevelTag != null;
@@ -468,10 +466,13 @@ public final class Logcat {
                     }
                 }
 
-                methodName = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
-
                 StringBuilder stringBuilder = new StringBuilder();
                 if (showStackTraceInfo) {
+                    String fileName = stackTraceElement == null ? "null" : stackTraceElement.getFileName();
+                    String methodName = stackTraceElement == null ? "null" : stackTraceElement.getMethodName();
+                    int lineNumber = stackTraceElement == null ? -1 : stackTraceElement.getLineNumber();
+                    methodName = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
+
                     stringBuilder.append("[ (").append(fileName).append(":").append(lineNumber).append(")#").append(methodName).append(" ] ");
                 }
 
@@ -604,36 +605,33 @@ public final class Logcat {
      * 写Log 到文件
      */
     private static void writeLog(@LockLevel final int logLevel, final Object msg, @Nullable final String jsonText,
-                                 @Nullable final String logFileName, final boolean append, int stackTraceOffset, final String... tag) {
+                                 @Nullable final String logFileName, @Nullable final String absFile, final boolean append, int stackTraceOffset, final String... tag) {
         if (NOT_SHOW_LOG != (logLevel &
                 fileSaveLogType)) {
             //当前线程的堆栈情况
-            final StackTraceElement stackTraceElement = getStackTraceElement(INDEX + 1 + stackTraceOffset);
+            final StackTraceElement stackTraceElement = showFileStackTraceInfo ? getStackTraceElement(INDEX + 1 + stackTraceOffset) : null;
             //linux thread ID
             Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);
             final long threadId = Process.myTid();
+            final String threadName = Thread.currentThread().getName();
             if (printFileHandler != null) {
                 printFileHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        fileLog(stackTraceElement, logLevel, msg, jsonText, logFileName, append, threadId, tag);
+                        fileLog(stackTraceElement, logLevel, msg, jsonText, logFileName, absFile, append, threadId, threadName, tag);
                     }
                 });
             }
         }
     }
 
-    private static void fileLog(StackTraceElement stackTraceElement, int type, Object
-            objectMsg, @Nullable String jsonText, @Nullable String logFileName, final boolean append, long threadId, @Nullable String... tagArgs) {
+    private static void fileLog(@Nullable StackTraceElement stackTraceElement, int type, Object
+            objectMsg, @Nullable String jsonText, @Nullable String logFileName, @Nullable final String absFile, final boolean append, long threadId, final String threadName, @Nullable String... tagArgs) {
         String msg;
         if (fileSaveLogType == NOT_SHOW_LOG) {
             return;
         }
 
-        String fileName = stackTraceElement.getFileName();
-        String className = stackTraceElement.getClassName();
-        String methodName = stackTraceElement.getMethodName();
-        int lineNumber = stackTraceElement.getLineNumber();
 
         StringBuilder tagBuilder = new StringBuilder();
         boolean hasTop = topLevelTag != null;
@@ -658,8 +656,6 @@ public final class Logcat {
         }
 
 
-        methodName = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
-
         StringBuilder stringBuilder = new StringBuilder();
 
         // 得到当前日期时间的指定格式字符串
@@ -674,8 +670,12 @@ public final class Logcat {
         }
 
         if (showFilePidInfo) {
+            String threadIdInfo = String.valueOf(threadId);
+            if (showFileThreadName) {
+                threadIdInfo += "-" + threadName;
+            }
             stringBuilder
-                    .append(String.format("%s-%s/%s", pid, threadId, pkgName))
+                    .append(String.format("%s-%s/%s", pid, threadIdInfo, pkgName))
                     .append(BLANK_STR);
         }
 
@@ -719,6 +719,11 @@ public final class Logcat {
                 }
                 stringBuilder.append(BLANK_STR);
             }
+            String fileName = stackTraceElement == null ? "null" : stackTraceElement.getFileName();
+            String className = stackTraceElement == null ? "null" : stackTraceElement.getClassName();
+            String methodName = stackTraceElement == null ? "null" : stackTraceElement.getMethodName();
+            int lineNumber = stackTraceElement == null ? -1 : stackTraceElement.getLineNumber();
+            methodName = methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
 
             stringBuilder.append("[ (").append(fileName).append(":").append(lineNumber).append(")#").append(methodName).append(" ] ");
         }
@@ -751,19 +756,19 @@ public final class Logcat {
 
         switch (type) {
             case SHOW_VERBOSE_LOG:
-                saveLogToFile(stringBuilder.toString(), logFileName, append);
+                saveLogToFile(stringBuilder.toString(), logFileName, absFile, append);
                 break;
             case SHOW_DEBUG_LOG:
-                saveLogToFile(stringBuilder.toString(), logFileName, append);
+                saveLogToFile(stringBuilder.toString(), logFileName, absFile, append);
                 break;
             case SHOW_INFO_LOG:
-                saveLogToFile(stringBuilder.toString(), logFileName, append);
+                saveLogToFile(stringBuilder.toString(), logFileName, absFile, append);
                 break;
             case SHOW_WARN_LOG:
-                saveLogToFile(stringBuilder.toString(), logFileName, append);
+                saveLogToFile(stringBuilder.toString(), logFileName, absFile, append);
                 break;
             case SHOW_ERROR_LOG:
-                saveLogToFile(stringBuilder.toString(), logFileName, append);
+                saveLogToFile(stringBuilder.toString(), logFileName, absFile, append);
                 break;
             default:
                 break;
@@ -776,7 +781,7 @@ public final class Logcat {
      * @param msg         msg
      * @param logFileName log 文件名
      */
-    private static void saveLogToFile(String msg, @Nullable String logFileName, final boolean append) {
+    private static void saveLogToFile(String msg, @Nullable String logFileName, @Nullable String absFile, final boolean append) {
         if (TextUtils.isEmpty(logFileName)) {
             // 得到当前日期时间的指定格式字符串
             @SuppressLint("SimpleDateFormat") SimpleDateFormat fileSimpleDateFormat = new SimpleDateFormat(YYYY_MM_DD);
@@ -815,8 +820,12 @@ public final class Logcat {
                 if (delete) {
                     MediaScannerConnection.scanFile(context, delPaths.toArray(new String[0]), null, null);
                 }
-
-                File fileLogFilePath = new File(logFolderPath, logFileName);
+                File fileLogFilePath;
+                if (TextUtils.isEmpty(absFile)) {
+                    fileLogFilePath = new File(logFolderPath, logFileName);
+                } else {
+                    fileLogFilePath = new File(absFile);
+                }
                 // 如果日志文件不存在，则创建它
                 if (!fileLogFilePath.exists()) {
                     try {
@@ -881,8 +890,16 @@ public final class Logcat {
     /**
      * 当前线程的堆栈情况
      */
+    @Nullable
     private static StackTraceElement getStackTraceElement(int index) {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        if (stackTrace == null) {
+            return null;
+        }
+        if (stackTrace.length <= index) {
+            return null;
+        }
+
         return stackTrace[index];
     }
 

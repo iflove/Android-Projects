@@ -23,6 +23,7 @@ public final class Config {
     boolean showStackTraceInfo;
     boolean showFileTimeInfo;
     boolean showFilePidInfo;
+    boolean showFileThreadName;
     boolean showFileLogLevel;
     boolean showFileLogTag;
     boolean showFileStackTraceInfo;
@@ -37,6 +38,7 @@ public final class Config {
         this.showStackTraceInfo = builder.showStackTraceInfo;
         this.showFileTimeInfo = builder.showFileTimeInfo;
         this.showFilePidInfo = builder.showFilePidInfo;
+        this.showFileThreadName = builder.showFileThreadName;
         this.showFileLogLevel = builder.showFileLogLevel;
         this.showFileLogTag = builder.showFileLogTag;
         this.showFileStackTraceInfo = builder.showFileStackTraceInfo;
