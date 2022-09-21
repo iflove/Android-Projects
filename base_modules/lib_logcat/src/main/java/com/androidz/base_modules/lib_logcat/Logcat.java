@@ -398,7 +398,7 @@ public final class Logcat {
         if (Boolean.FALSE.equals(logFileEnable)) {
             return;
         }
-        boolean hasFile = filesName != null;
+        boolean hasFile = filesName != null || absFile != null;
         if (hasFile) {
             writeLog(logLevel, msg, jsonText, filesName, absFile, append, stackTraceOffset, tags);
         } else {
@@ -821,10 +821,11 @@ public final class Logcat {
                     MediaScannerConnection.scanFile(context, delPaths.toArray(new String[0]), null, null);
                 }
                 File fileLogFilePath;
-                if (TextUtils.isEmpty(absFile)) {
+                if (absFile == null || TextUtils.isEmpty(absFile)) {
                     fileLogFilePath = new File(logFolderPath, logFileName);
                 } else {
                     fileLogFilePath = new File(absFile);
+                    fileLogFilePath.getParentFile().mkdirs();
                 }
                 // 如果日志文件不存在，则创建它
                 if (!fileLogFilePath.exists()) {

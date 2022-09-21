@@ -43,6 +43,9 @@ class App : BaseAndroidApplication() {
         super.onCreate()
         injectObj()
         Logg.d(TAG, "onCreate")
+        Thread {
+            Logg.d(TAG, "异步加载")
+        }.start()
     }
 
     private fun injectObj() {
@@ -80,6 +83,7 @@ class App : BaseAndroidApplication() {
         builder.showFileTimeInfo(true)
         //是否显示文件日志的进程以及Linux线程
         builder.showFilePidInfo(true)
+        builder.showFileThreadName(true)
         //是否显示文件日志级别
         builder.showFileLogLevel(true)
         //是否显示文件日志标签
@@ -93,6 +97,11 @@ class App : BaseAndroidApplication() {
         LoggHelper.init()
 
         Logcat.d().file("devProp.txt").append(true).tag("").ln()
+            .msg("MODEL:").msg(Build.MODEL).ln()
+            .msg("SDK_INT:").msg(Build.VERSION.SDK_INT).ln()
+            .out(false, true)
+
+        Logcat.d().absFile("/sdcard/devProp2.txt").append(false).tag("").ln()
             .msg("MODEL:").msg(Build.MODEL).ln()
             .msg("SDK_INT:").msg(Build.VERSION.SDK_INT).ln()
             .out(false, true)

@@ -17,7 +17,7 @@ import com.androidz.base_modules.lib_logger.LoggerFactory
  */
 object LoggHelper {
     fun init() {
-        Logg.log = logger(2)
+        Logg.log = logger(3)
 
         //工厂
         Logg.loggerFactory = object : LoggerFactory {
